@@ -8,15 +8,92 @@ define d = Character('Dark Overlord', color="#ffb6c1")
 
 define n = Character("Narrator", color="#c8c8ff")
 
+image MC = "MC.png"
+image OM = "OM.png"
+image PS = "PS.png"
+image DO = "DO.png"
+
+init:
+    # 10x upscale transform (explicit x/y zoom)
+    transform scale10:
+        xzoom 10.0
+        yzoom 10.0
+
+# --- Credits UI and transforms ---
+init:
+    transform credits_scroll:
+        # start below the screen and scroll up past the top
+        ypos 900
+        linear 28.0 ypos -1400
+
+    style credits_title is default:
+        size 44
+        color "#ffffff"
+        xalign 0.5
+        yalign 0.5
+
+    style credits_entry is default:
+        size 28
+        color "#ffffff"
+        xalign 0.5
+
+screen credits_screen():
+    tag credits
+    add Solid("#000")
+
+    frame at credits_scroll:
+        xalign 0.5
+        yalign 0.5
+        background None
+        xmaximum 800
+        ymaximum 600
+
+        viewport id "credits_vp":
+            draggable False
+            mousewheel False
+            vbox:
+                spacing 24
+                xalign 0.5
+
+                text "Credits" style "credits_title"
+
+                text ""
+
+                text "Game Design & Programming: Eli Nelson" style "credits_entry"
+                text "Storyboard: HackClub" style "credits_entry"
+                text "Music track: 'Majestic' — Alegend" style "credits_entry"
+                text "Source: https://freetouse.com/music" style "credits_entry"
+                text "No Copyright Background Music" style "credits_entry"
+                text "Backgrounds: Potat0Master (Itch.io)" style "credits_entry"
+
+                text ""
+                text "Thank you for playing!" style "credits_entry"
+
+# Label to play the credits. Call `jump credits` where appropriate.
+label credits:
+    scene black
+    with fade
+    show screen credits_screen
+    # Wait for the scroll to finish (match the linear duration above)
+    $ renpy.pause(16.0, hard=True)
+    hide screen credits_screen
+    with fade
+    return
+
 default specialty = ""
 default gold = 0
 default health = 100
 default stamina = 50
+# Track whether the player purchased/has the Deluxe Destiny Package items
+default sword = False
+default map = False
 
 label start:
     show screen stats
     scene pra_a3_day1
     with fade
+    show MC at left, scale10 with dissolve
+    # Scene change: Bedroom
     n "You wake up in your bedroom, the morning sun streaming through the window."
     n "But something feels off. You hear a loud banging noise coming from outside."
     b "What the...?"
@@ -31,6 +108,8 @@ label start:
         b "It's probably nothing. I'll just go back to sleep."
         n "You close your eyes and try to ignore the noise, but it only gets louder."
         n "Suddenly, the door bursts open and an scruffy old man storms in."
+        # Old Man enters the scene
+        show OM at right, scale10 with dissolve
         o "What are you doing sleeping through my banging?!"
         o "The chosen one must rise!"
         jump regular_person
@@ -38,6 +117,8 @@ label start:
     label investigate_noise:
         b "I should check out that noise."
         n "You get out of bed and head towards the door. As you open it, you see an old man banging on your front door."
+        # Old Man enters the scene
+        show OM at right, scale10 with dissolve
         o "Finally! Someone who can help me!"
         o "You must be the chosen one!"
         o "The fate of the world rests on your shoulders!"
@@ -63,13 +144,14 @@ label start:
         n "Suddenly, you feel a strange sensation wash over you. The world around you starts to blur and fade away."
         scene black
         with fade
-
+        # Scene transition: Teleportation
         scene restaurant_booth_day4
         with fade
+        # Scene change: Hot Cocoa Shop
         n "When you open your eyes again, you find yourself in a completely different place."
         n "You are no longer in your bedroom, but Coffee Shop."
         jump not_a_coffee_shop
-        #TODO add other scene changes
+
 
     label go_with_old_man:
         n "You decide to follow the old man. Because, why not?"
@@ -98,14 +180,14 @@ label start:
         o "And you will pay for it!"
 
     menu:
-         "Pay the ridiculously high fees and go along with the Old Man.":
-             jump pay_fees
-         "Refuse and try to run away.":
-             jump run_away
-         "Complain loudly about the absurdity of it all.":
-             jump complain
-         "Attempt to negotiate for a discount (or free cocoa).":
-             jump negotiate
+        "Pay the ridiculously high fees and go along with the Old Man.":
+            jump pay_fees
+        "Refuse and try to run away.":
+            jump run_away
+        "Complain loudly about the absurdity of it all.":
+            jump complain
+        "Attempt to negotiate for a discount (or free cocoa).":
+            jump negotiate
 
     label pay_fees:
         b "Fine! I'll pay the fees. Just give me the cocoa."
@@ -113,6 +195,7 @@ label start:
         n "The old smiles and hands you a cup of hot cocoa."
         n "You take a sip and feel a warm sensation spread through your body."
         n "Suddenly, the world around you starts to blur and fade away."
+        scene black
         with fade
         jump training
 
@@ -123,6 +206,8 @@ label start:
         n "You run through the streets, trying to put as much distance between you and the old man."
         n "After a few blocks, you finally stop to catch your breath."
         n "You realize that you are lost and have no idea where you are."
+        # Old Man enters the scene (catches up)
+        show OM at right, scale10 with dissolve
         o "Well, well, well. Look who decided to run away."
         n "You turn around to see the old man had somehow caught up to you."
         o "You can't escape your destiny, or your fees!"
@@ -130,6 +215,7 @@ label start:
         n "He grabs you by the arm and puts a cup of hot cocoa in your hand."
         n "You sigh and take a sip a warm sensation spreads through your body."
         n "Suddenly, the world around you starts to blur and fade away."
+        scene black
         with fade
         jump training
 
@@ -148,6 +234,7 @@ label start:
         $ gold -= 420000
         n "You sigh and take a sip a warm sensation spreads through your body."
         n "Suddenly, the world around you starts to blur and fade away."
+        scene black
         with fade
         jump training
 
@@ -162,14 +249,20 @@ label start:
         $ gold -= 10000
         n "You sigh and take a sip a warm sensation spreads through your body."
         n "Suddenly, the world around you starts to blur and fade away."
+        scene black
         with fade
         jump training
 
     label training:
+        # Scene change: Training Room
+        scene wooden_bridgeway_c1day3
+        with fade
         n "When you open your eyes again, you find yourself in a training room."
         n "The old man stands in front of the room, a young girl asleep on the ground."
         o "Welcome to your training, chosen one!"
         o "This is Princess Snore the only other surviving participant in the Chosen-One Package!"
+        # Princess Snore enters the scene (asleep)
+        show PS at center, scale10 with dissolve
         o "She is a powerful sorceress, but she sleeps a LOT, like a lot a lot."
         o "You will need to train hard to keep up with her."
         b "Great, just what I always wanted. To train with a sleeping princess."
@@ -217,6 +310,7 @@ label start:
         o "Now, we must prepare for the final battle against the Dark Overlord."
         o "First you must beat Princess Snore, she is the final test."
         n "Princess Snore wakes up, stretching and yawning."
+        # Princess Snore becomes active in the scene
         p "Oh, hey there! Ready for our final battle?"
         b "Sure, let's get this over with."
 
@@ -344,6 +438,8 @@ label start:
     label flee_battle:
         b "I can't do this! I'm out of here!"
         n "You turn and run, but Princess Snore quickly catches up to you."
+        # Princess Snore enters the scene (catches up)
+        show PS at center, scale10 with dissolve
         p "You can't escape your destiny!"
         n "She lands a major hit on you as you try to flee."
         $ health -= 100
@@ -383,8 +479,7 @@ label start:
         o "But first can I interest you in our Deluxe Destiny Package™ for only 1,000,000 gold?"
         b "Ugh, not again. Do I have to?"
         o "Of course! It's a once in a lifetime opportunity!"
-        b "I am OK, thanks."
-        o "It includes a shiny new sword and a map to the Dark Overlord's lair!"
+        b "It includes a shiny new sword and a map to the Dark Overlord's lair!"
 
         menu:
             "Reluctantly agree to buy the Deluxe Destiny Package™.":
@@ -397,9 +492,13 @@ label start:
             "Refuse and prepare to face the Dark Overlord without it.":
                 n "You decide to face the Dark Overlord without the Deluxe Destiny Package™."
                 n "You steel yourself for the final battle ahead."
+                scene black
+                with fade
                 jump travel_final_battle
 
     label travel_final_battle:
+        # Scene change: Journey to the Lair
+        scene black
         n "You and Princess Snore travel for days, following the map to the Dark Overlord's lair."
         n "Along the way, you encounter various challenges and obstacles, but you manage to overcome them together."
         n "You did lose some health and stamina along the way, but you are determined to see this through."
@@ -412,8 +511,13 @@ label start:
         jump final_battle
 
     label final_battle:
+        # Scene change: Dark Overlord's Lair
+        scene rooftop_area_night1
+        with fade
         n "You and Princess Snore enter the Dark Overlord's lair, ready for the final battle."
         n "The Dark Overlord stands before you, a menacing figure shrouded in darkness."
+        # Dark Overlord enters the scene
+        show DO at center, scale10 with dissolve
         d "So, you have made it this far, chosen one. But this is where your journey ends."
         n "The final battle begins!"
         if sword and map:
@@ -423,6 +527,8 @@ label start:
             d "Die you insignificant mortal!"
             n "Princess Snore falls over."
             n "Asleep of course."
+            # Princess Snore leaves the scene (falls asleep)
+            hide PS with dissolve
             d "What do you want from me?"
 
             menu:
@@ -433,7 +539,8 @@ label start:
                     n "Congratulations, chosen one! You have fulfilled your destiny."
                     $ price = gold + gold*2
                     o "All for the low, low price of [price] gold!"
-                    return
+                    jump credits
+                    
                 "Why am I even doing this? This is all so absurd.":
                     n "You lower your sword, feeling disillusioned with the whole situation."
                     d "Good! I was hoping you'd say that. Because I'm actually just a regular guy trying to make a living."
@@ -445,18 +552,37 @@ label start:
                     n "You and the Dark Overlord team up to take down Old Man Yells-a-Lot freeing countless people from his fees and getting the Hot Cocoa Shop back!"
                     n "You have saved the world!"
                     n "Congratulations, chosen one! You have fulfilled your true destiny."
-                    return
+                    jump credits
+
         else:
-            #TODO make other ending
+            n "The Dark Overlord laughs at your lack of preparation."
+            d "You think you can defeat me without the Deluxe Destiny Package™? How pathetic!"
+            n "He launches a powerful spell at both of you, Princess Snore falls over; Hit."
+            n "Asleep of course."
+            # Princess Snore leaves the scene (falls asleep)
+            hide PS with dissolve
+            d "What do you want from me?"
 
-            return
-
-
-
-
-
-
-
+            menu:
+                "To destroy you and stop your evil plans.":
+                    n "You try to fight the Dark Overlord, but without the Deluxe Destiny Package™, you are no match for him."
+                    n "He easily overpowers you and you fall to the ground, defeated."
+                    n "You have failed in your quest."
+                    jump game_over
+                    
+                "Why am I even doing this? This is all so absurd.":
+                    n "You lower your head, feeling disillusioned with the whole situation."
+                    d "Good! I was hoping you'd say that. Because I'm actually just a regular guy trying to make a living."
+                    d "This whole 'Dark Overlord' thing is just the only way I can make money right now"
+                    d "You see this awful old man scammed me out of my Hot Cocoa Shop and now I'm stuck doing this."
+                    b "Wait, I know that guy!"
+                    b "I owe him a lot of money too!"
+                    b "Lets go take back your Hot Cocoa Shop and get rid of that old guy!"
+                    n "You and the Dark Overlord team up to take down Old Man Yells-a-Lot freeing countless people from his fees and getting the Hot Cocoa Shop back!"
+                    n "You have saved the world!"
+                    n "Congratulations, chosen one! You have fulfilled your true destiny."
+                    jump credits
+            
 
 
     label game_over:
